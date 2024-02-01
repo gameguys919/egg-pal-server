@@ -1,0 +1,74 @@
+{
+    "_comment": "DO NOT EDIT: FILE GENERATED AUTOMATICALLY BY PTERODACTYL PANEL - PTERODACTYL.IO",
+    "meta": {
+        "version": "PTDL_v2",
+        "update_url": null
+    },
+    "exported_at": "2024-02-01T10:35:04+01:00",
+    "name": "Palworld",
+    "author": "eliashahn.gs@gmail.com",
+    "description": "-",
+    "features": [
+        "steam_disk_space"
+    ],
+    "docker_images": {
+        "quay.io\/parkervcp\/pterodactyl-images:debian_source": "quay.io\/parkervcp\/pterodactyl-images:debian_source"
+    },
+    "file_denylist": [],
+    "startup": ".\/PalServer.sh",
+    "config": {
+        "files": "{\r\n    \"\/Pal\/Saved\/Config\/LinuxServer\/GameUserSettings.ini\": {\r\n        \"parser\": \"properties\",\r\n        \"find\": {\r\n            \"ServerName\": \"{{server.build.env.SERVER_NAME}}\"\r\n        }\r\n    }\r\n}",
+        "startup": "{\r\n    \"done\": \"Setting breakpad minidump AppID =\"\r\n}",
+        "logs": "{}",
+        "stop": "^C"
+    },
+    "scripts": {
+        "installation": {
+            "script": "#!\/bin\/bash\r\n# steamcmd Base Installation Script\r\n#\r\n# Server Files: \/mnt\/server\r\n# Image to install with is 'ubuntu:18.04'\r\n\r\n## just in case someone removed the defaults.\r\nif [ \"${STEAM_USER}\" == \"\" ]; then\r\n    STEAM_USER=anonymous\r\n    STEAM_PASS=\"\"\r\n    STEAM_AUTH=\"\"\r\nfi\r\n\r\n## download and install steamcmd\r\ncd \/tmp\r\nmkdir -p \/mnt\/server\/steamcmd\r\ncurl -sSL -o steamcmd.tar.gz https:\/\/steamcdn-a.akamaihd.net\/client\/installer\/steamcmd_linux.tar.gz\r\ntar -xzvf steamcmd.tar.gz -C \/mnt\/server\/steamcmd\r\n\r\n## create a symbolic link for loading mods\r\ncd \/mnt\/server\/Engine\/Binaries\/ThirdParty\/SteamCMD\/Linux\r\nln -sf ..\/..\/..\/..\/..\/Steam\/steamapps steamapps\r\ncd \/mnt\/server\r\nmkdir -p \/mnt\/server\/Engine\/Binaries\/ThirdParty\/SteamCMD\/Linux\r\ntar -xzvf steamcmd.tar.gz -C \/mnt\/server\/Engine\/Binaries\/ThirdParty\/SteamCMD\/Linux\r\nmkdir -p \/mnt\/server\/steamapps # Fix steamcmd disk write error when this folder is missing\r\ncd \/mnt\/server\/steamcmd\r\n\r\n# SteamCMD fails otherwise for some reason, even running as root.\r\n# This is changed at the end of the install process anyways.\r\nchown -R root:root \/mnt\r\nexport HOME=\/mnt\/server\r\n\r\n## install game using steamcmd\r\n.\/steamcmd.sh +force_install_dir \/mnt\/server +login ${STEAM_USER} ${STEAM_PASS} ${STEAM_AUTH} +app_update 1007 ${EXTRA_FLAGS} +quit ## dependencies\r\n\r\n.\/steamcmd.sh +force_install_dir \/mnt\/server +login ${STEAM_USER} ${STEAM_PASS} ${STEAM_AUTH} +app_update ${SRCDS_APPID} ${EXTRA_FLAGS} +quit ## other flags may be needed depending on install. looking at you cs 1.6\r\n# cd \/mnt\/server\r\n#mkdir -p \/.steam\/sdk64\/\r\n#ln -s linux64\/steamclient.so \/.steam\/sdk64\/steamclient.so\r\n#chmod 777 \/.steam\/sdk64\/steamclient.so\r\n\r\n## set up 32 bit libraries\r\nmkdir -p \/mnt\/server\/.steam\/sdk32\r\ncp -v linux32\/steamclient.so ..\/.steam\/sdk32\/steamclient.so\r\n\r\n## set up 64 bit libraries\r\nmkdir -p \/mnt\/server\/.steam\/sdk64\r\ncp -v linux64\/steamclient.so ..\/.steam\/sdk64\/steamclient.so",
+            "container": "ghcr.io\/pterodactyl\/installers:debian",
+            "entrypoint": "bash"
+        }
+    },
+    "variables": [
+        {
+            "name": "Auto-update server",
+            "description": "This is to enable auto-updating for servers.\r\n\r\nDefault is 0. Set to 1 to update",
+            "env_variable": "AUTO_UPDATE",
+            "default_value": "0",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|boolean",
+            "field_type": "text"
+        },
+        {
+            "name": "App ID",
+            "description": "Steam App ID don't change",
+            "env_variable": "SRCDS_APPID",
+            "default_value": "2394010",
+            "user_viewable": true,
+            "user_editable": false,
+            "rules": "nullable|numeric",
+            "field_type": "text"
+        },
+        {
+            "name": "Additional Arguments",
+            "description": "-",
+            "env_variable": "ARGS",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string",
+            "field_type": "text"
+        },
+        {
+            "name": "ServerName",
+            "description": "Give your Palserver a Name",
+            "env_variable": "SERVER_NAME",
+            "default_value": "A Pterodactyl hosted Palworld Server",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|string|max:128",
+            "field_type": "text"
+        }
+    ]
+}
